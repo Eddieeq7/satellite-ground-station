@@ -9,7 +9,7 @@ jobs:
         sanitize: ["", "thread", "address"]
     name: test ${{ matrix.sanitize || 'release' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.sanitize && 'Debug' || 'Release' }} -DGS_SANITIZE=${{ matrix.sanitize }}
       - name: build
@@ -22,7 +22,7 @@ jobs:
   netem:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: sudo apt-get update && sudo apt-get install -y iproute2 linux-modules-extra-$(uname -r) || true
       - run: sudo modprobe sch_netem || true
       - run: cmake -S . -B build -DGS_BUILD_TESTS=OFF && cmake --build build -j
@@ -32,15 +32,17 @@ jobs:
   bench:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: cmake -S . -B build -DGS_BUILD_TESTS=OFF && cmake --build build -j
       - run: nproc && lscpu | grep 'Model name'
       - name: loopback throughput / latency
         run: |
-          for pps in 100000 250000 500000 750000; do
-            ./build/gs_bench $pps 5 2 | tee -a bench.jsonl
+          for w in 1 2; do
+            for pps in 100000 250000 500000; do
+              ./build/gs_bench $pps 5 $w | tee -a bench.jsonl
+            done
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: bench
           path: bench.jsonl

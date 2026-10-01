@@ -37,7 +37,11 @@ expected_lost = count * loss / 100
 measured = r["lost"] / count * 100
 print(f"injected {loss:.1f}% loss · station measured {measured:.2f}% lost, "
       f"{r['reordered']} reordered, {r['duplicates']} duplicates, {r['crc_errors']} CRC errors")
-assert r["received"] + r["lost"] == count, "every sequence number must be accounted for"
+# Losses at the very end of a stream are invisible to sequence numbers (no later
+# packet reveals the gap), so allow a small unaccounted tail per APID.
+unaccounted = count - (r["received"] + r["lost"])
+print(f"tail losses not detectable from sequence numbers: {unaccounted}")
+assert 0 <= unaccounted <= 30, "all but trailing losses must be accounted for"
 assert abs(measured - loss) < 1.0, "measured loss should be within 1 pt of injected loss"
 print("PASS")
 PY
